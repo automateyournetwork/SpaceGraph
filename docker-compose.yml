@@ -1,14 +1,14 @@
 version: '3.6'
 
 services:
-  langgraph-server:
+  spacegraph:
     build:
       context: .
       dockerfile: ./docker/Dockerfile
-    image: johncapobianco/langgraph-server:latest
-    container_name: langgraph-server
+    image: johncapobianco/spacegraph:latest
+    container_name: spacegraph
     restart: always
     ports:
-      - "8123:8123"
+      - "2024:2024"
     env_file:
       - .env

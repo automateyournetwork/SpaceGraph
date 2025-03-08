@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "🚀 Starting LangGraph FastAPI Server..."
+echo "🚀 Starting LangGraph Studio with SpaceGraph..."
 cd /SpaceGraph
-uvicorn run_langgraph:app --host 0.0.0.0 --port 8123
+langgraph dev --host 0.0.0.0 --port 2024
