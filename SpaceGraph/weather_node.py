@@ -1,15 +1,14 @@
 import os
 import json
-import time
 import logging
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Set API Keys from .env
+# Set API Key
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 # Configure logging
@@ -17,75 +16,77 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_API_URL = "https://api.weatherapi.com/v1"
 
-# ---------------------------- WEATHER API AGENT ---------------------------- #
 class WeatherAPI:
-    def __init__(self):
-        self.api_key = WEATHER_API_KEY
+    """Handles fetching weather data from WeatherAPI, supporting both city and lat/long queries."""
 
-    def fetch_data(self, endpoint, params):
-        url = f"{BASE_API_URL}/{endpoint}.json"
-        params["key"] = self.api_key
-        
-        retries = 3
-        for attempt in range(retries):
-            try:
-                logging.debug(f"Fetching data from {url} with params {params}")
-                response = requests.get(url, params=params, timeout=5)
-                response.raise_for_status()
-                data = response.json()
+    def __init__(self, api_key: Optional[str] = WEATHER_API_KEY):
+        if not api_key:
+            raise ValueError("❌ Missing API Key for Weather API.")
+        self.api_key = api_key
 
-                # ✅ Check if API returned an error message
-                if "error" in data:
-                    logging.error(f"❌ Weather API Error: {data['error']['message']}")
-                    return {"error": "Unable to gather weather data."}
+    def fetch_weather(self, location: str) -> Dict[str, Any]:
+        """
+        Fetch weather data using either:
+        - A city name (e.g., "Toronto")
+        - Latitude/Longitude (e.g., "43.7,-79.4")
+        """
+        url = f"{BASE_API_URL}/current.json"
+        params = {"key": self.api_key, "q": location}
 
-                return data  # ✅ Successful response
+        try:
+            logging.info(f"🌍 Fetching weather for: {location}")
+            response = requests.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            data = response.json()
 
-            except requests.exceptions.RequestException as e:
-                logging.error(f"⚠️ API request failed (Attempt {attempt+1}): {e}")
-                time.sleep(2)  # Retry delay
-        
-        # ✅ If all retries fail, return a user-friendly error message
-        return {"error": "Unable to gather weather data."}
+            if "error" in data:
+                logging.error(f"❌ Weather API Error: {data['error']['message']}")
+                return {"error": f"Weather data unavailable: {data['error']['message']}"}
 
-    def get_weather(self, latitude, longitude):
-        return self.fetch_data("current", {"q": f"{latitude},{longitude}"})
+            return data
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"⚠️ Weather API request failed: {e}")
+            return {"error": "Failed to retrieve weather data."}
 
 def weather_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Fetch weather based on ISS coordinates or user input and return a clean error message if needed."""
-    logging.info("🌍 Fetching weather data...")
+    """Handles weather queries dynamically for city names OR latitude/longitude."""
+    logging.info("🌦️ Processing weather request...")
 
-    # ✅ Handle user-provided coordinates (e.g., "how is the weather at 10,10")
-    location = state.get("user_input", "").strip()
-    if "weather" in location.lower() and "," in location:
-        coords = location.split("weather at")[-1].strip()
-    else:
-        coords = None
+    # ✅ Extract user-specified location from state
+    location = state.get("location")
 
-    if coords:
-        try:
-            latitude, longitude = map(str.strip, coords.split(","))
-        except ValueError:
-            latitude, longitude = None, None
-    else:
-        latitude = state.get("iss_location", {}).get("latitude")
-        longitude = state.get("iss_location", {}).get("longitude")
+    # 🚀 Fix: If `weather_requested=True` and no location is provided, use ISS lat/long
+    if state.get("weather_requested", False) and not location:
+        iss_location = state.get("iss_location", {})
+        latitude = iss_location.get("latitude")
+        longitude = iss_location.get("longitude")
 
-    if not latitude or not longitude:
-        logging.warning("⚠️ Missing location. Cannot fetch weather.")
-        state["weather"] = {"error": "Unable to gather weather data."}
+        if latitude and longitude:
+            location = f"{latitude},{longitude}"
+            logging.info(f"🛰️ Using ISS location for weather query: {location}")
+        else:
+            logging.warning("⚠️ No valid ISS location found.")
+            state["weather"] = {"error": "No valid location provided for weather request."}
+            state["next_step"] = "__end__"
+            return state
+
+    # 🚀 Fix: Ensure `location` is a valid string before querying API
+    if not location or not isinstance(location, str) or len(location.strip()) == 0:
+        logging.warning("⚠️ No valid location provided.")
+        state["weather"] = {"error": "No valid location provided for weather request."}
         state["next_step"] = "__end__"
         return state
 
     # ✅ Fetch weather data
     weather_client = WeatherAPI()
-    weather_data = weather_client.get_weather(latitude, longitude)
+    weather_data = weather_client.fetch_weather(location.strip())
 
-    # ✅ Store weather or error message in state
+    # ✅ Store the response in state
     state["weather"] = weather_data
-    logging.info(f"🌦️ Weather API Response: {json.dumps(weather_data, indent=2)}")
+    logging.info(f"✅ Weather Data Retrieved: {json.dumps(weather_data, indent=2)}")
 
-    state["next_step"] = "__end__"  # ✅ Explicitly ensure execution ends here
-    logging.info("✅ Weather Node Complete. Ending Execution.")
-    
+    state["next_step"] = "__end__"
+    logging.info("✅ Weather Node Execution Complete.")
+
     return state

@@ -17,6 +17,7 @@ class WeatherData(TypedDict):  # ✅ NEW: Add Weather Data Structure
 
 class State(TypedDict):
     user_input: str
+    location: Optional[str]  # ✅ NEW: Store city name or lat/long
     iss_location: Optional[ISSLocation]
     astronauts: Optional[List[Astronaut]]
     weather: Optional[WeatherData]  # ✅ Store Weather Data
