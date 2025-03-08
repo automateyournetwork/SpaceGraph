@@ -1,0 +1,12 @@
+{
+  "entrypoints": {
+    "space_agent": "run_langgraph:compiled_graph"
+  },
+  "graphs": {
+    "space_agent": "run_langgraph:compiled_graph"
+  },
+  "dependencies": [
+    "app/run_langgraph.py"
+  ],
+  "env_file": ".env"
+}

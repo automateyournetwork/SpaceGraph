@@ -1,0 +1,14 @@
+version: '3.6'
+
+services:
+  langgraph-server:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    image: johncapobianco/langgraph-server:latest
+    container_name: langgraph-server
+    restart: always
+    ports:
+      - "8123:8123"
+    env_file:
+      - .env
