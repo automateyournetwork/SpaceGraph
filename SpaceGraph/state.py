@@ -22,3 +22,4 @@ class State(TypedDict):
     weather: Optional[WeatherData]  # ✅ Store Weather Data
     weather_requested: bool  # ✅ Flag to track if weather at ISS was requested
     next_agent: Optional[str]
+    final_answer: Optional[str]  # ✅ Ensure final answer is stored for UI access
