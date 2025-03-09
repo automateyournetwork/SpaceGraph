@@ -20,7 +20,8 @@ from iss_locator_node import iss_locator_node
 from astros_in_space_node import astros_in_space_node
 from llm_router_node import llm_router_node
 from weather_node import weather_node
-from apod_node import apod_node  # ✅ NEW: Import APOD Node
+from apod_node import apod_node  # ✅ APOD Node
+from neo_node import neo_node  # ✅ NEW: Import NEO Node
 from natural_language_answer_node import natural_language_answer_node
 
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +32,8 @@ graph.add_node("router_node", llm_router_node)
 graph.add_node("iss_locator_node", iss_locator_node)
 graph.add_node("astros_in_space_node", astros_in_space_node)
 graph.add_node("weather_node", weather_node)
-graph.add_node("apod_node", apod_node)  # ✅ NEW: Add APOD Node
+graph.add_node("apod_node", apod_node)  # ✅ APOD Node
+graph.add_node("neo_node", neo_node)  # ✅ NEW: Add NEO Node
 graph.add_node("natural_language_answer_node", natural_language_answer_node)
 
 # ✅ Routing Function (Ensures Correct Execution)
@@ -43,7 +45,14 @@ def routing_function(state: Dict[str, Any]) -> str:
     logging.info(f"🚀 Routing Decision: {next_step}, Current State: {json.dumps(state, indent=2)}")
 
     # Ensure `next_step` is a valid node
-    valid_steps = {"iss_locator_node", "astros_in_space_node", "weather_node", "apod_node", "__end__"}
+    valid_steps = {
+        "iss_locator_node",
+        "astros_in_space_node",
+        "weather_node",
+        "apod_node",
+        "neo_node",  # ✅ NEW: Add NEO Node to valid routing
+        "__end__"
+    }
     
     if next_step in valid_steps:
         return next_step  # ✅ Ensures valid return value
@@ -83,7 +92,8 @@ graph.add_conditional_edges(
         "iss_locator_node": "iss_locator_node",
         "astros_in_space_node": "astros_in_space_node",
         "weather_node": "weather_node",
-        "apod_node": "apod_node",  # ✅ NEW: Route APOD requests correctly
+        "apod_node": "apod_node",  # ✅ APOD Requests
+        "neo_node": "neo_node",  # ✅ NEW: Route NEO requests
         "__end__": "__end__",  # ✅ Explicitly allow stopping
     }
 )
@@ -113,6 +123,13 @@ graph.add_conditional_edges(
 # ✅ Ensure APOD response is formatted before ending execution
 graph.add_conditional_edges(
     "apod_node",
+    lambda state: "natural_language_answer_node",
+    {"natural_language_answer_node": "natural_language_answer_node"}
+)
+
+# ✅ Ensure NEO response is formatted before ending execution
+graph.add_conditional_edges(
+    "neo_node",
     lambda state: "natural_language_answer_node",
     {"natural_language_answer_node": "natural_language_answer_node"}
 )
