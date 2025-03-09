@@ -1,24 +1,27 @@
 import json
 import logging
-from langchain_openai import ChatOpenAI
 import os
+from openai import OpenAI
+from langsmith import traceable
+from langsmith.wrappers import wrap_openai
 from state import State
 
 # Load API Key from environment variable
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Initialize LLM Model
-llm = ChatOpenAI(
-    model="gpt-4o",
-    temperature=0,
-    api_key=OPENAI_API_KEY
-)
+# ✅ Wrap OpenAI client for LangSmith tracing
+client = wrap_openai(OpenAI(api_key=OPENAI_API_KEY))
 
-# Natural Language Answer Node
+# ✅ Enable LangSmith Tracing if configured
+LANGSMITH_TRACING = os.getenv("LANGSMITH_TRACING", "false").lower() == "true"
+
+if LANGSMITH_TRACING:
+    logging.info("✅ LangSmith Tracing Enabled for `natural_language_answer_node`")
+
+@traceable  # 🚀 Auto-trace this function
 def natural_language_answer_node(state: State) -> State:
     """Converts structured response data into human-readable text using LLM."""
-    
-    # Log structured state data before processing
+
     logging.info(f"📡 Received Structured Data: {json.dumps(state, indent=2)}")
 
     # ✅ Extract key data from state
@@ -50,15 +53,17 @@ def natural_language_answer_node(state: State) -> State:
         location_name = weather_data["location"].get("name", "Unknown location")
         region = weather_data["location"].get("region", "")
         country = weather_data["location"].get("country", "")
-        condition = weather_data["current"]["condition"]["text"]
-        temperature_c = weather_data["current"]["temp_c"]
-        feels_like_c = weather_data["current"]["feelslike_c"]
-        humidity = weather_data["current"]["humidity"]
-        wind_kph = weather_data["current"]["wind_kph"]
+        condition = weather_data["current"]["condition"].get("text", "Unknown")
+        temperature_c = weather_data["current"].get("temp_c", "N/A")
+        feels_like_c = weather_data["current"].get("feelslike_c", "N/A")
+        humidity = weather_data["current"].get("humidity", "N/A")
+        wind_kph = weather_data["current"].get("wind_kph", "N/A")
 
         # Check if this is ISS weather
-        if iss_location and (weather_data["location"].get("lat") == float(iss_location["latitude"]) and
-                             weather_data["location"].get("lon") == float(iss_location["longitude"])):
+        if iss_location and (
+            weather_data["location"].get("lat") == float(iss_location.get("latitude", 0)) and
+            weather_data["location"].get("lon") == float(iss_location.get("longitude", 0))
+        ):
             logging.info("🌦️ Weather at ISS Detected")
             structured_data = (
                 f"The current weather at the ISS location is {condition}. "
@@ -78,7 +83,7 @@ def natural_language_answer_node(state: State) -> State:
 
     logging.info(f"📤 Sending Data to LLM: {structured_data}")
 
-    # LLM Prompt
+    # ✅ LLM Prompt
     prompt = f"""
     You are an AI assistant that translates structured information into **clear, human-friendly responses**.
     Given this structured information:
@@ -87,17 +92,17 @@ def natural_language_answer_node(state: State) -> State:
 
     Please write a **concise and engaging response** in full sentences.
     """
-    
-    # Invoke LLM
-    response = llm.invoke(prompt)
-    logging.info(f"📝 LLM Raw Response: {response}")
 
-    # Store the response
-    if hasattr(response, "content") and response.content:
-        state["final_answer"] = response.content.strip()
-    else:
-        state["final_answer"] = "I'm sorry, but I couldn't generate a response."
+    # ✅ Invoke LLM using OpenAI client
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
 
+    # ✅ Extract response safely
+    response_text = response.choices[0].message.content.strip() if response.choices else "I'm sorry, but I couldn't generate a response."
+
+    state["final_answer"] = response_text
     logging.info(f"✅ Final Processed Answer: {state['final_answer']}")
-    
+
     return state

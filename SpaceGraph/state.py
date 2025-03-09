@@ -1,4 +1,5 @@
 from typing import TypedDict, Optional, List
+import datetime
 
 class ISSLocation(TypedDict):
     latitude: str
@@ -24,3 +25,4 @@ class State(TypedDict):
     weather_requested: bool  # ✅ Flag to track if weather at ISS was requested
     next_agent: Optional[str]
     final_answer: Optional[str]  # ✅ Ensure final answer is stored for UI access
+    timestamp: str  # ✅ Store when the state was last updated

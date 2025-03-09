@@ -1,9 +1,20 @@
 import json
 import logging
+import os
 from langgraph.graph import StateGraph
 from typing import Dict, Any
 
-# Agent imports
+# LangSmith Imports
+from langsmith import traceable
+from langsmith.wrappers import wrap_openai
+
+# Load environment variables for LangSmith
+LANGSMITH_TRACING = os.getenv("LANGSMITH_TRACING", "false").lower() == "true"
+
+if LANGSMITH_TRACING:
+    logging.info("✅ LangSmith Tracing Enabled")
+
+# ✅ Initialize LangGraph StateGraph
 from state import State
 from iss_locator_node import iss_locator_node
 from astros_in_space_node import astros_in_space_node
@@ -12,8 +23,6 @@ from weather_node import weather_node
 from natural_language_answer_node import natural_language_answer_node
 
 logging.basicConfig(level=logging.INFO)
-
-# ✅ Initialize LangGraph StateGraph
 graph = StateGraph(State)
 
 # ✅ Add Nodes
@@ -24,6 +33,7 @@ graph.add_node("weather_node", weather_node)
 graph.add_node("natural_language_answer_node", natural_language_answer_node)
 
 # ✅ Routing Function (Ensures Correct Execution)
+@traceable  # 🚀 Auto-trace function execution
 def routing_function(state: Dict[str, Any]) -> str:
     """Determine the next step based on user intent."""
     next_step = state.get("next_agent", "__end__")  # ✅ Default to `__end__`
@@ -41,6 +51,7 @@ def routing_function(state: Dict[str, Any]) -> str:
     return "__end__"
 
 # ✅ Weather Routing Function (Ensures ISS location is fetched first)
+@traceable
 def weather_routing_function(state: Dict[str, Any]) -> str:
     """Ensure we fetch ISS location before getting weather, only if needed."""
     
@@ -108,3 +119,5 @@ graph.set_finish_point("natural_language_answer_node")
 
 # ✅ Compile the Graph
 compiled_graph = graph.compile()
+
+logging.info("🚀 LangGraph Compiled Successfully")
