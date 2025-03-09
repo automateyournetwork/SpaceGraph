@@ -33,7 +33,8 @@ def llm_router_node(state: State) -> State:
         "- iss_locator_node (if the user asks about the ISS location)\n"
         "- astros_in_space_node (if the user asks about astronauts in space)\n"
         "- weather_node (if the user asks about weather, temperature, or conditions)\n"
-        "- apod_node (if the user asks about NASA's Astronomy Picture of the Day)\n\n"
+        "- apod_node (if the user asks about NASA's Astronomy Picture of the Day)\n"
+        "- neo_node (if the user asks about asteroids, near-Earth objects, or potential asteroid impacts)\n\n"
         "If the user asks for weather, analyze whether they provided:\n"
         "1. A city name (like 'Toronto')\n"
         "2. A latitude/longitude pair (like '40.7,-74.0')\n\n"
@@ -79,6 +80,11 @@ def llm_router_node(state: State) -> State:
     elif response_text == "apod_node":
         logging.info("🛰️ User requested NASA's Astronomy Picture of the Day.")
         state["next_agent"] = "apod_node"
+
+    # ✅ Handle NEO request (Near-Earth Objects)
+    elif response_text == "neo_node":
+        logging.info("☄️ User requested Near-Earth Object (NEO) data.")
+        state["next_agent"] = "neo_node"
 
     else:
         state["next_agent"] = response_text

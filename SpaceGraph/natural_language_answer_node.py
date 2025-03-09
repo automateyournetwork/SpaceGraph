@@ -29,6 +29,7 @@ def natural_language_answer_node(state: State) -> State:
     astronauts = state.get("astronauts", [])
     weather_data = state.get("weather", {})
     apod_data = state.get("apod", {})
+    neo_data = state.get("neo", {})
 
     structured_data = None  # Will store the formatted summary
 
@@ -39,7 +40,6 @@ def natural_language_answer_node(state: State) -> State:
         title = apod_data.get("title", "Unknown Title")
         description = apod_data.get("description", "No description available.")
         date = apod_data.get("date", "Unknown Date")
-        media_type = apod_data.get("media_type", "unknown")
         url = apod_data.get("url", "")
 
         if "error" in apod_data:
@@ -49,6 +49,31 @@ def natural_language_answer_node(state: State) -> State:
                 f"📷 NASA's Astronomy Picture of the Day for {date} is titled **{title}**.\n\n"
                 f"**Description:** {description}\n\n"
                 f"🔗 View it here: [NASA APOD]({url})"
+            )
+
+    # ✅ Handle NEO Data (Near-Earth Objects)
+    elif neo_data and "asteroids" in neo_data:
+        logging.info("☄️ Processing Near-Earth Object (NEO) Data")
+
+        date = neo_data.get("date", "Unknown Date")
+        asteroids = neo_data.get("asteroids", [])
+
+        if not asteroids:
+            structured_data = f"There are no known near-Earth asteroids approaching Earth on {date}."
+        else:
+            asteroid_list = []
+            for asteroid in asteroids:
+                hazard_status = "⚠️ Potentially Hazardous!" if asteroid["hazardous"] else "✅ Not Hazardous"
+                asteroid_list.append(
+                    f"- **{asteroid['name']}**\n"
+                    f"  - Diameter: {asteroid['diameter_km']:.2f} km\n"
+                    f"  - Speed: {asteroid['velocity_kph']} km/h\n"
+                    f"  - Miss Distance: {asteroid['miss_distance_km']} km\n"
+                    f"  - {hazard_status}\n"
+                )
+
+            structured_data = (
+                f"☄️ **Near-Earth Asteroids for {date}:**\n\n" + "\n".join(asteroid_list)
             )
 
     # ✅ Handle ISS Location
