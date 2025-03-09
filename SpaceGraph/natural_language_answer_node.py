@@ -28,11 +28,31 @@ def natural_language_answer_node(state: State) -> State:
     iss_location = state.get("iss_location", {})
     astronauts = state.get("astronauts", [])
     weather_data = state.get("weather", {})
+    apod_data = state.get("apod", {})
 
     structured_data = None  # Will store the formatted summary
 
+    # ✅ Handle APOD Data
+    if apod_data and "title" in apod_data:
+        logging.info("🛰️ Processing NASA APOD Data")
+        
+        title = apod_data.get("title", "Unknown Title")
+        description = apod_data.get("description", "No description available.")
+        date = apod_data.get("date", "Unknown Date")
+        media_type = apod_data.get("media_type", "unknown")
+        url = apod_data.get("url", "")
+
+        if "error" in apod_data:
+            structured_data = "I couldn't retrieve today's NASA Astronomy Picture of the Day."
+        else:
+            structured_data = (
+                f"📷 NASA's Astronomy Picture of the Day for {date} is titled **{title}**.\n\n"
+                f"**Description:** {description}\n\n"
+                f"🔗 View it here: [NASA APOD]({url})"
+            )
+
     # ✅ Handle ISS Location
-    if iss_location and "latitude" in iss_location and "longitude" in iss_location:
+    elif iss_location and "latitude" in iss_location and "longitude" in iss_location:
         logging.info("🛰️ Processing ISS Location Data")
         structured_data = (
             f"The International Space Station (ISS) is currently located at "
@@ -40,14 +60,14 @@ def natural_language_answer_node(state: State) -> State:
         )
 
     # ✅ Handle Astronaut Data
-    if astronauts:
+    elif astronauts:
         logging.info("🚀 Processing Astronaut Data")
         astronaut_list = [f"{astro['name']} (aboard {astro['craft']})" for astro in astronauts]
         astronaut_text = ", ".join(astronaut_list)
         structured_data = f"There are currently {len(astronauts)} astronauts in space: {astronaut_text}."
 
-    # ✅ Handle Weather Data (Either ISS Location, City, or Lat/Long)
-    if weather_data and "current" in weather_data and "location" in weather_data:
+    # ✅ Handle Weather Data
+    elif weather_data and "current" in weather_data and "location" in weather_data:
         logging.info("🌦️ Processing Weather Data")
 
         location_name = weather_data["location"].get("name", "Unknown location")
