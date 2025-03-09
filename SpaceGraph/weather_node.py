@@ -4,6 +4,7 @@ import logging
 import requests
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
+from langsmith import traceable
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +25,7 @@ class WeatherAPI:
             raise ValueError("❌ Missing API Key for Weather API.")
         self.api_key = api_key
 
+    @traceable  # 🚀 Auto-trace this function
     def fetch_weather(self, location: str) -> Dict[str, Any]:
         """
         Fetch weather data using either:
@@ -46,9 +48,10 @@ class WeatherAPI:
             return data
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"⚠️ Weather API request failed: {e}")
+            logging.error(f"⚠️ Weather API request failed: {e}", exc_info=True)
             return {"error": "Failed to retrieve weather data."}
 
+@traceable  # 🚀 Auto-trace the weather node function
 def weather_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Handles weather queries dynamically for city names OR latitude/longitude."""
     logging.info("🌦️ Processing weather request...")

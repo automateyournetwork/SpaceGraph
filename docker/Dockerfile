@@ -8,6 +8,8 @@ RUN pip install langchain_openai
 
 RUN pip install fastapi
 
+RUN pip install langsmith
+
 # Now copy the rest of the application files
 COPY /SpaceGraph /SpaceGraph
 COPY /scripts /scripts/
