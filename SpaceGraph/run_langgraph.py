@@ -20,8 +20,9 @@ from iss_locator_node import iss_locator_node
 from astros_in_space_node import astros_in_space_node
 from llm_router_node import llm_router_node
 from weather_node import weather_node
-from apod_node import apod_node  # ✅ APOD Node
-from neo_node import neo_node  # ✅ NEW: Import NEO Node
+from mars_weather_node import mars_weather_node  # ✅ NEW: Import Mars Weather Node
+from apod_node import apod_node
+from neo_node import neo_node
 from natural_language_answer_node import natural_language_answer_node
 
 logging.basicConfig(level=logging.INFO)
@@ -32,8 +33,9 @@ graph.add_node("router_node", llm_router_node)
 graph.add_node("iss_locator_node", iss_locator_node)
 graph.add_node("astros_in_space_node", astros_in_space_node)
 graph.add_node("weather_node", weather_node)
-graph.add_node("apod_node", apod_node)  # ✅ APOD Node
-graph.add_node("neo_node", neo_node)  # ✅ NEW: Add NEO Node
+graph.add_node("mars_weather_node", mars_weather_node)  # ✅ NEW: Add Mars Weather Node
+graph.add_node("apod_node", apod_node)
+graph.add_node("neo_node", neo_node)
 graph.add_node("natural_language_answer_node", natural_language_answer_node)
 
 # ✅ Routing Function (Ensures Correct Execution)
@@ -41,19 +43,21 @@ graph.add_node("natural_language_answer_node", natural_language_answer_node)
 def routing_function(state: Dict[str, Any]) -> str:
     """Determine the next step based on user intent."""
     next_step = state.get("next_agent", "__end__")  # ✅ Default to `__end__`
-    
+
     logging.info(f"🚀 Routing Decision: {next_step}, Current State: {json.dumps(state, indent=2)}")
 
     # Ensure `next_step` is a valid node
     valid_steps = {
         "iss_locator_node",
-        "astros_in_space_node",
+        "astros_in_space_node",s
         "weather_node",
+        "mars_weather_node",
         "apod_node",
-        "neo_node",  # ✅ NEW: Add NEO Node to valid routing
+        "neo_node",
+        "natural_language_answer_node",  # ✅ Ensure this can be reached
         "__end__"
     }
-    
+
     if next_step in valid_steps:
         return next_step  # ✅ Ensures valid return value
 
@@ -61,12 +65,12 @@ def routing_function(state: Dict[str, Any]) -> str:
     logging.warning(f"⚠️ No valid next step found: {next_step}. Stopping execution.")
     return "__end__"
 
-# ✅ Weather Routing Function (Ensures ISS location is fetched first)
+# ✅ Weather Routing Function (Handles ISS & Earth weather)
 @traceable
 def weather_routing_function(state: Dict[str, Any]) -> str:
-    """Ensure we fetch ISS location before getting weather, only if needed."""
+    """Ensure ISS location is fetched before getting weather if needed."""
     
-    # ✅ Ensure `weather_node` is the next step when weather was requested
+    # ✅ Ensure ISS location is retrieved before checking its weather
     if state.get("weather_requested", False):
         iss_location = state.get("iss_location", {})
         if not iss_location or "latitude" not in iss_location or "longitude" not in iss_location:
@@ -78,8 +82,21 @@ def weather_routing_function(state: Dict[str, Any]) -> str:
         state["next_step"] = "weather_node"  # ✅ Fetch weather after ISS location
         return state["next_step"]
 
-    logging.info("✅ No weather request detected. Routing to natural language output.")
-    return "natural_language_answer_node"  # ✅ Ensure it reaches final response node
+    logging.info("✅ No ISS weather request detected. Routing to natural language output.")
+    return "natural_language_answer_node"
+
+# ✅ Earth-Mars Weather Comparison Function
+@traceable
+def earth_mars_comparison_routing(state: Dict[str, Any]) -> str:
+    """If user wants both Earth and Mars weather, fetch Mars weather first, then Earth weather."""
+    
+    if state.get("compare_weather", False):
+        logging.info("🌍🔄🪐 User requested Earth-Mars weather comparison. Fetching Earth weather after Mars.")
+        state["next_step"] = "weather_node"  # ✅ Earth weather after Mars
+        return state["next_step"]
+
+    logging.info("✅ No comparison needed. Routing to NLP.")
+    return "natural_language_answer_node"
 
 # ✅ Set Entry Point
 graph.set_entry_point("router_node")
@@ -92,9 +109,10 @@ graph.add_conditional_edges(
         "iss_locator_node": "iss_locator_node",
         "astros_in_space_node": "astros_in_space_node",
         "weather_node": "weather_node",
-        "apod_node": "apod_node",  # ✅ APOD Requests
-        "neo_node": "neo_node",  # ✅ NEW: Route NEO requests
-        "__end__": "__end__",  # ✅ Explicitly allow stopping
+        "mars_weather_node": "mars_weather_node",  # ✅ NEW: Route Mars Weather Queries
+        "apod_node": "apod_node",
+        "neo_node": "neo_node",
+        "__end__": "__end__"
     }
 )
 
@@ -104,7 +122,7 @@ graph.add_conditional_edges(
     weather_routing_function,  
     {
         "weather_node": "weather_node",
-        "natural_language_answer_node": "natural_language_answer_node",  # ✅ Ensure ISS location reaches LLM
+        "natural_language_answer_node": "natural_language_answer_node",
     }
 )
 
@@ -120,14 +138,24 @@ graph.add_conditional_edges(
     {"natural_language_answer_node": "natural_language_answer_node"}
 )
 
-# ✅ Ensure APOD response is formatted before ending execution
+# ✅ Ensure Mars weather can be compared to Earth
+graph.add_conditional_edges(
+    "mars_weather_node",
+    lambda state: "weather_node" if state.get("compare_weather", False) else "natural_language_answer_node",  
+    {
+        "weather_node": "weather_node",  # ✅ Fetch Earth weather if needed
+        "natural_language_answer_node": "natural_language_answer_node"  # ✅ Otherwise, return Mars weather immediately
+    }
+)
+
+# ✅ Ensure APOD response is formatted before exiting
 graph.add_conditional_edges(
     "apod_node",
     lambda state: "natural_language_answer_node",
     {"natural_language_answer_node": "natural_language_answer_node"}
 )
 
-# ✅ Ensure NEO response is formatted before ending execution
+# ✅ Ensure NEO response is formatted before exiting
 graph.add_conditional_edges(
     "neo_node",
     lambda state: "natural_language_answer_node",
