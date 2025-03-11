@@ -24,16 +24,27 @@ class APODData(TypedDict):
     url: Optional[str]
     error: Optional[str]
 
-class Asteroid(TypedDict):  # ✅ NEW: Structure for individual asteroids
+class Asteroid(TypedDict):
     name: str
     diameter_km: float
     velocity_kph: str
     miss_distance_km: str
     hazardous: bool
 
-class NEOData(TypedDict):  # ✅ NEW: Store Near-Earth Object Data
+class NEOData(TypedDict):
     date: str
     asteroids: List[Asteroid]
+    error: Optional[str]
+
+class MarsWeatherData(TypedDict):  # ✅ NEW: Store Mars Weather Data
+    sol: str  # Martian day
+    season: str
+    temperature_c: Optional[float]
+    pressure_pa: Optional[float]
+    wind_speed_mps: Optional[float]
+    wind_direction: Optional[str]
+    first_utc: Optional[str]
+    last_utc: Optional[str]
     error: Optional[str]
 
 class State(TypedDict):
@@ -41,9 +52,10 @@ class State(TypedDict):
     location: Optional[str]  # ✅ Store city name or lat/long
     iss_location: Optional[ISSLocation]
     astronauts: Optional[List[Astronaut]]
-    weather: Optional[WeatherData]  # ✅ Store Weather Data
+    weather: Optional[WeatherData]  # ✅ Store Earth Weather Data
     apod: Optional[APODData]  # ✅ Store APOD Data
-    neo: Optional[NEOData]  # ✅ NEW: Store Near-Earth Object Data
+    neo: Optional[NEOData]  # ✅ Store Near-Earth Object Data
+    mars_weather: Optional[MarsWeatherData]  # ✅ NEW: Store Mars Weather Data
     weather_requested: bool  # ✅ Track if weather at ISS was requested
     next_agent: Optional[str]
     final_answer: Optional[str]  # ✅ Ensure final answer is stored for UI access
