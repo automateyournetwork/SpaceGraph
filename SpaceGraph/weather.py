@@ -53,7 +53,7 @@ class WeatherFetcher:
                 temp_c = data.get("current", {}).get("temp_c", "N/A")
                 condition = data.get("current", {}).get("condition", {}).get("text", "N/A")
 
-                return f"The weather in {location}, {country} is {temp_c}°C with {condition}."
+                return {"agent_response": f"The weather in {location}, {country} is {temp_c}°C with {condition}."}
 
             except requests.exceptions.RequestException as e:
                 logging.error(f"❌ Weather API Request Failed (Attempt {attempt+1}): {e}")

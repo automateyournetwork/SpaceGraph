@@ -38,7 +38,7 @@ class ISSLocator:
                 latitude = data["iss_position"]["latitude"]
                 longitude = data["iss_position"]["longitude"]
 
-                return f"The ISS is currently at Latitude: {latitude}, Longitude: {longitude}."
+                return {"agent_response": f"The ISS is currently at Latitude: {latitude}, Longitude: {longitude}."}
             except requests.exceptions.RequestException as e:
                 logging.error(f"❌ API Request Failed (Attempt {attempt+1}): {e}")
                 time.sleep(2)  # Small delay before retrying
