@@ -7,6 +7,7 @@ import logging
 
 #Tools and State
 from state import State
+from apod import get_apod
 from weather import get_weather
 from iss_locator import get_iss_location
 from astronauts_in_space import get_astronauts
@@ -36,6 +37,7 @@ AVAILABLE_TOOLS = {
     "iss_agent": get_iss_location,
     "astronauts_agent": get_astronauts,
     "weather_agent": get_weather,
+    "apod_agent": get_apod,
 }
 
 @traceable
@@ -65,6 +67,7 @@ def assistant(state: State) -> dict:
     - iss_agent: For ISS location, orbit, or tracking
     - astronauts_agent: For who is in space
     - weather_agent: For weather in a city or at lat/lon
+    - apod_agent: For astronomy photo of the day
 
     Respond with a JSON object **inside triple backticks** like this:
     ```
@@ -154,6 +157,8 @@ def tools(state: State) -> dict:
             tool_result = get_iss_location(user_input)
         elif current_tool == "astronauts_agent":
             tool_result = get_astronauts(user_input)
+        elif current_tool == "apod_agent":
+            tool_result = get_apod(user_input)            
         elif current_tool == "weather_agent":
             weather_params = state.get("parameters", {}).get("weather_agent", {})
             city = weather_params.get("city", None)  # ✅ Extract city properly
@@ -199,6 +204,7 @@ def end(state: State) -> dict:
     iss_location = tool_responses.get("iss_agent", "No ISS location data was requested or available.")
     astronauts_data = tool_responses.get("astronauts_agent", "No astronaut data was requested or available.")
     weather_data = tool_responses.get("weather_agent", "No weather data was requested or available.")
+    apod_data = tool_responses.get("apod_agent", "No APOD data was requested or available")
     
     # Prepare comprehensive context for the LLM
     context = ""
@@ -212,6 +218,9 @@ def end(state: State) -> dict:
 
     if "weather_agent" in tool_responses:
         context += f"WEATHER ON EARTH DATA:\n{weather_data}\n\n"
+
+    if "apod_agent" in tool_responses:
+        context += f"APOD DATA:\n{apod_data}\n\n"
 
     # If no tool was used, note that
     if not tool_responses:
@@ -228,8 +237,8 @@ def end(state: State) -> dict:
     AVAILABLE DATA:
     {context}
     
-    Your response should be conversational, accurate, and engaging. If both ISS location and 
-    astronaut data are available, be sure to clearly connect the astronauts to the ISS when appropriate.
+    Your response should be conversational, accurate, and engaging. You have data from one or more agents. Please try to make correlations and connections
+    between the various AI Agent responses. 
     
     If the data is incomplete, acknowledge limitations but be helpful with what's available.
     """
