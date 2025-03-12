@@ -12,3 +12,15 @@ services:
       - "2024:2024"
     env_file:
       - .env
+
+  streamlit-ui:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.streamlit
+    image: johncapobianco/spacegraph-ui:latest
+    container_name: spacegraph-ui
+    restart: always
+    ports:
+      - "8501:8501"
+    depends_on:
+      - spacegraph
