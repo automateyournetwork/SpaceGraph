@@ -18,26 +18,7 @@ LangGraph AI Agent approach with Space APIs
 #### REST API Instructions:
 📖 Space Agent API Usage Guide
 
-1️⃣ Get an API Token
-Before making requests, obtain an API token (if authentication is required).
-
-``` bash
-curl -X POST "http://127.0.0.1:2024/auth/token" \
-     -H "Content-Type: application/json" \
-     -d '{"username": "your_username", "password": "your_password"}'
-```
-
-✅ Response Example:
-
-``` json
-{
-    "access_token": "your_generated_token",
-    "token_type": "Bearer"
-}
-
-```
-
-2️⃣ Create a New Thread
+1️⃣ Create a New Thread
 Each interaction starts by creating a thread.
 
 ``` bash
