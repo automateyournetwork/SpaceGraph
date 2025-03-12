@@ -15,6 +15,8 @@ LangGraph AI Agent approach with Space APIs
 
 ### REST API
 
+### Streamlit UI
+
 #### REST API Instructions:
 📖 Space Agent API Usage Guide
 
