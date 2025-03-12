@@ -49,17 +49,19 @@ def assistant(state: State) -> dict:
     tool_responses = state.get("tool_responses", {})
     pending_tools = state.get("pending_tools", [])
 
-    # If we have pending tools, continue routing to tools
+    # Ensure `assistant` always returns a dict
+    if not isinstance(state, dict):
+        return {"error": "Invalid state format"}
+
+    # If tools are pending, move to `tools`
     if pending_tools:
-        logger.info(f"🔄 Routing to tools: {pending_tools}")
         return {"next_node": "tools"}
 
-    # If we have tool responses but no pending tools, we're done
+    # If we have tool responses but no pending tools, move to `end`
     if tool_responses and not pending_tools:
-        logger.info("✅ All tools completed. Generating final response.")
         return {"next_node": "end"}
 
-    # 🔹 LLM Classification with Structured Response
+    # Process the input and determine necessary tools
     prompt = f"""
     You are an AI assistant that classifies user questions and extracts structured data.
 
@@ -67,15 +69,13 @@ def assistant(state: State) -> dict:
     - iss_agent: For ISS location, orbit, or tracking
     - astronauts_agent: For who is in space
     - weather_agent: For weather in a city or at lat/lon
-    - apod_agent: For astronomy photo of the day
+    - apod_agent: For NASA Astronomy Picture of the Day
 
     Respond with a JSON object **inside triple backticks** like this:
     ```
     {{
         "tools": ["tool_name1", "tool_name2"],
-        "parameters": {{
-            "weather_agent": {{"city": "Toronto"}}  # Example
-        }}
+        "parameters": {{}}
     }}
     ```
     If no tools apply, return:
@@ -96,31 +96,26 @@ def assistant(state: State) -> dict:
         response_text = response.choices[0].message.content.strip()
         logger.info(f"🔍 Raw LLM Response: {response_text}")
 
-        # ✅ Extract JSON content from LLM response (triple backticks issue)
+        # Extract JSON from response
         json_match = re.search(r"```(?:json)?\n(.*?)\n```", response_text, re.DOTALL)
         if json_match:
-            response_text = json_match.group(1)  # Extract JSON content
+            response_text = json_match.group(1)
 
         structured_response = json.loads(response_text)  # ✅ Use json.loads()
         logger.info(f"🔍 Parsed LLM JSON: {structured_response}")
 
-        # Extract tool list and parameters
         tools = structured_response.get("tools", [])
         parameters = structured_response.get("parameters", {})
 
         valid_tools = [tool for tool in tools if tool in AVAILABLE_TOOLS]
 
         if not valid_tools:
-            logger.info("No applicable tools found, routing to end.")
             return {"next_node": "end"}
 
-        logger.info(f"🔍 Identified tools: {valid_tools}, Extracted parameters: {parameters}")
-
-        # ✅ Ensure parameters persist in state
         return {
             "pending_tools": valid_tools,
             "tool_responses": {},
-            "parameters": parameters,  # ✅ Store structured data explicitly
+            "parameters": parameters,
             "next_node": "tools"
         }
 
@@ -255,7 +250,7 @@ def end(state: State) -> dict:
         logger.error(f"⚠️ Error generating final response: {e}")
         final_answer = "I'm sorry, I encountered an issue processing the space data. Please try again or rephrase your question."
     
-    return {"final_response": final_answer, "next_node": END}
+    return {"final_response": final_answer, "next_node": END}  # ✅ Always return a dict
 
 # Add nodes to the graph
 graph.add_node("assistant", assistant)

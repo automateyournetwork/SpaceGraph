@@ -36,7 +36,7 @@ class AstronautsInSpace:
                 # ✅ Extract astronaut names
                 astronauts = [person["name"] for person in data.get("people", [])]
                 if astronauts:
-                    return f"There are currently {len(astronauts)} astronauts in space: {', '.join(astronauts)}."
+                    return {"agent_response": f"There are currently {len(astronauts)} astronauts in space: {', '.join(astronauts)}."}
                 return "No astronauts found in space."
 
             except requests.exceptions.RequestException as e:
