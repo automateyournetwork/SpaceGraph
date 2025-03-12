@@ -155,15 +155,14 @@ def tools(state: State) -> dict:
         elif current_tool == "apod_agent":
             tool_result = get_apod(user_input)            
         elif current_tool == "weather_agent":
-            weather_params = state.get("parameters", {}).get("weather_agent", {})
-            city = weather_params.get("city", None)  # ✅ Extract city properly
-            lat = weather_params.get("lat", None)
-            lon = weather_params.get("lon", None)
+            # ✅ Extract city from state parameters
+            weather_params = state.get("parameters", {})
+            city = weather_params.get("location", None)  # Fix parameter lookup
 
-            if city or (lat and lon):  # ✅ Ensure at least one valid input is passed
-                tool_result = get_weather({"city": city, "lat": lat, "lon": lon})
+            if city:
+                tool_result = get_weather({"city": city})
             else:
-                logger.error(f"⚠️ Weather tool failed: Missing city or coordinates. Params received: {weather_params}")
+                logger.error("⚠️ Weather tool failed: Missing city parameter.")
                 tool_result = "⚠️ Missing city or coordinates for weather lookup."
         else:
             logger.warning(f"⚠️ Unknown tool requested: {current_tool}")
@@ -279,4 +278,5 @@ graph.add_edge("end", END)
 
 # Compile the graph
 compiled_graph = graph.compile()
+
 logger.info("🚀 Simplified Space Information LangGraph compiled successfully")
