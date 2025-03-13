@@ -7,6 +7,7 @@ import logging
 
 #Tools and State
 from state import State
+from neo import get_near_earth_objects
 from apod import get_apod
 from weather import get_weather
 from iss_locator import get_iss_location
@@ -38,6 +39,7 @@ AVAILABLE_TOOLS = {
     "astronauts_agent": get_astronauts,
     "weather_agent": get_weather,
     "apod_agent": get_apod,
+    "neo_agent": get_near_earth_objects
 }
 
 @traceable
@@ -70,6 +72,7 @@ def assistant(state: State) -> dict:
     - astronauts_agent: For who is in space
     - weather_agent: For weather in a city or at lat/lon
     - apod_agent: For NASA Astronomy Picture of the Day
+    - neo_agent: Near Earth Objects agent for asteroids near Earth
 
     Respond with a JSON object **inside triple backticks** like this:
     ```
@@ -153,7 +156,9 @@ def tools(state: State) -> dict:
         elif current_tool == "astronauts_agent":
             tool_result = get_astronauts(user_input)
         elif current_tool == "apod_agent":
-            tool_result = get_apod(user_input)            
+            tool_result = get_apod(user_input)
+        elif current_tool == "neo_agent":
+            tool_result = get_near_earth_objects(user_input)
         elif current_tool == "weather_agent":
             # ✅ Extract city from state parameters
             weather_params = state.get("parameters", {})
@@ -199,6 +204,7 @@ def end(state: State) -> dict:
     astronauts_data = tool_responses.get("astronauts_agent", "No astronaut data was requested or available.")
     weather_data = tool_responses.get("weather_agent", "No weather data was requested or available.")
     apod_data = tool_responses.get("apod_agent", "No APOD data was requested or available")
+    neo_data = tool_responses.get("neo_agent", "No NEO data was requested or available")
     
     # Prepare comprehensive context for the LLM
     context = ""
@@ -215,6 +221,9 @@ def end(state: State) -> dict:
 
     if "apod_agent" in tool_responses:
         context += f"APOD DATA:\n{apod_data}\n\n"
+
+    if "neo_agent" in tool_responses:
+        context += f"Near Earth Object DATA:\n{neo_data}\n\n"
 
     # If no tool was used, note that
     if not tool_responses:
