@@ -6,11 +6,11 @@ from langgraph.prebuilt import tools_condition, ToolNode
 from langchain_core.messages import HumanMessage, SystemMessage
 
 # Tools (Assume they are implemented elsewhere)
-from neo import get_near_earth_objects
-from apod import get_apod
-from weather import get_weather
-from iss_locator import get_iss_location
-from astronauts_in_space import get_astronauts
+from tools.neo import get_near_earth_objects
+from tools.apod import get_apod
+from tools.weather import get_weather
+from tools.iss_locator import get_iss_location
+from tools.astronauts_in_space import get_astronauts
 
 # ✅ Configure Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
